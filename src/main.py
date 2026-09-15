@@ -7,6 +7,7 @@ import wfdb
 import numpy as np
 import tkinter as tk
 import matplotlib.pyplot as plt
+from flask.cli import cli
 from matplotlib import rc_params
 from matplotlib.ticker import scale_range, MultipleLocator
 from matplotlib.transforms import Bbox
@@ -14,27 +15,34 @@ from matplotlib.widgets import Slider, TextBox
 from numpy.ma.bench import timer
 from wfdb.io import record
 
+from flask import Flask
+
+import web_interface
+
 range_sld : Slider = None
 dist_sld : Slider = None
 range_txt : TextBox = None
 dist_txt : TextBox = None
 start_times = []
 time_texts = []
+#app = Flask(__name__)
 
 parent_figure : plt.Figure = None;
 
 def main():
     global parent_figure, dist_txt, records
     #load records and store them in global
-    record, record_start = open_record("C:/Users/zach/Downloads/EEG1_8")
-    record2, record2_start = open_record("../Fw_ Clinical Insights Manager Demo Export Data Examples/Resp_16")
-    record3, record3_start = open_record("C:/Users/zach/Downloads/EEG1_8")
+    record, record_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG1_8")
+    record2, record2_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG2_8")
+    record3, record3_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG3_8")
+    record4, record4_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG4_8")
 
     #create UI and plot all records
     parent_figure, range_slider, dist_slider = init_figure(record)
     plot_record(record, parent_figure.subfigs[0], record_start)
     plot_record(record2, parent_figure.subfigs[0], record2_start)
     plot_record(record3, parent_figure.subfigs[0], record3_start)
+    plot_record(record4, parent_figure.subfigs[0], record4_start)
     plt.show()
     startTime = datetime.datetime.now()
 
@@ -140,6 +148,10 @@ def update_view():
         time_texts[axs.index(ax)].set_text(start_times[axs.index(ax)]+time_offset)
         #print()
 
+    #TODO THIS DOES NOT WORk
+    #with app.app_context():
+        #web_interface.draw_graph(parent_figure)
+
 def plot_record(record : wfdb.Record, fig : plt.Figure, start_time : datetime.datetime):
     #recordfig : plt.Figure = wfdb.plot_wfdb(record=record, title='WFDB', return_fig=True, figsize=(10,10))
     #ax1 = recordfig.get_axes()
@@ -159,9 +171,9 @@ def plot_record(record : wfdb.Record, fig : plt.Figure, start_time : datetime.da
     ax.set_aspect('auto', anchor="N", adjustable=None)
     ax.set_title(record.record_name, fontsize = 7)
 
-    ax.minorticks_on()
-    ax.xaxis.set_major_locator(MultipleLocator(1.0))
-    ax.xaxis.set_minor_locator(MultipleLocator(1.0/6.0))
+    #ax.minorticks_on()
+    #ax.xaxis.set_major_locator(MultipleLocator(1.0))
+    #ax.xaxis.set_minor_locator(MultipleLocator(1.0/6.0))
 
     #set up grid
     gridx = np.arange(0, record.sig_len/record.fs, 1.0)
