@@ -36,6 +36,7 @@ def main():
     record2, record2_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG2_8")
     record3, record3_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG3_8")
     record4, record4_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG4_8")
+    record5, record5_start = open_record("C:/Users/zach/Desktop/coding stuff/python stuff/WFDB_for_dad/Fw_ Clinical Insights Manager Demo Export Data Examples/II_2")
 
     #create UI and plot all records
     parent_figure, range_slider, dist_slider = init_figure(record)
@@ -43,13 +44,20 @@ def main():
     plot_record(record2, parent_figure.subfigs[0], record2_start)
     plot_record(record3, parent_figure.subfigs[0], record3_start)
     plot_record(record4, parent_figure.subfigs[0], record4_start)
+    plot_record(record5, parent_figure.subfigs[0], record5_start)
     plt.show()
     startTime = datetime.datetime.now()
 
 def open_record(filename):
     global start_times
+    print("Opening record: " + filename)
     #open with wfdb library to extract data
     record = wfdb.rdrecord(filename)
+    signal = record.p_signal[:,0]
+    #if(signal.min() >= 0):
+    #    print("signal offset: " +str(signal.min()) + "-" + str(signal.max()))
+    #    record.p_signal[:,0] = signal/(signal.max()*2) - 0.333
+
     #open with python to extract datetime
     headerfile = open(filename+".hea", "r")
     header = headerfile.read()
@@ -157,7 +165,7 @@ def plot_record(record : wfdb.Record, fig : plt.Figure, start_time : datetime.da
     #ax1 = recordfig.get_axes()
     global time_texts
 
-    ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+    ax = fig.add_axes([0.1, 0.1, 0.7, 0.7])
 
     t = np.arange(0, record.sig_len/record.fs, 1.0 / record.fs)
     s = record.p_signal[: , 0 ]
@@ -187,7 +195,7 @@ def plot_record(record : wfdb.Record, fig : plt.Figure, start_time : datetime.da
 
     #set position based on number of graphs
     pos = ax.get_position()
-    height = (len(fig.get_axes())-1)/5
+    height = (len(fig.get_axes())-1)/6
 
     ax.set_position([pos.x0, pos.y0 + height, pos.width, pos.height/6])
 
