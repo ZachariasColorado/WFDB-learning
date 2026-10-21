@@ -23,6 +23,8 @@ range_sld : Slider = None
 dist_sld : Slider = None
 range_txt : TextBox = None
 dist_txt : TextBox = None
+scale_txt : TextBox = None
+
 start_times = []
 time_texts = []
 #app = Flask(__name__)
@@ -55,8 +57,9 @@ def open_record(filename):
     record = wfdb.rdrecord(filename)
     signal = record.p_signal[:,0]
     #if(signal.min() >= 0):
-    #    print("signal offset: " +str(signal.min()) + "-" + str(signal.max()))
-    #    record.p_signal[:,0] = signal/(signal.max()*2) - 0.333
+    print("signal max: " + str(signal.max()))
+    record.p_signal[:,0] = ((signal/3276)*100000)-10
+    print("new signal max: " + str((signal.max()/3276)*100000))
 
     #open with python to extract datetime
     headerfile = open(filename+".hea", "r")
@@ -83,7 +86,7 @@ init_figure
 takes: record - the record the sliders should have the length of
 '''
 def init_figure(record: wfdb.Record):
-    global range_sld, dist_sld, range_txt, dist_txt
+    global range_sld, dist_sld, range_txt, dist_txt, scale_txt
     #create figure and cut it in 2 in a  4:1 ratio
     parent_figure = plt.figure()
     subfigs = parent_figure.subfigures(2,1, hspace=0.05, height_ratios=[4,1])
@@ -94,6 +97,7 @@ def init_figure(record: wfdb.Record):
     ax_dist = sld_fig.add_axes((0.2, 0.5, 0.5, 0.5))
     ax_rangetext = sld_fig.add_axes((0.8, 0.2, 0.1, 0.25))
     ax_disttext = sld_fig.add_axes((0.8, 0.5, 0.1, 0.25))
+    ax_scaletext = sld_fig.add_axes((0.1, 0.2, 0.1, 0.25))
     range_slider = Slider(ax_range, "range", 0, record.sig_len/record.fs, valinit=10, valstep=1)
     dist_slider = Slider(ax_dist, "position", 0, record.sig_len/record.fs, valinit=5, valstep=1)
     range_slider.on_changed(update_range_sld)
@@ -107,10 +111,16 @@ def init_figure(record: wfdb.Record):
     range_text.on_submit(update_range_txt)
     dist_text.on_submit(update_position_txt)
 
+    #add text input for scale
+    scale_text = TextBox(ax_scaletext, "")
+    scale_text.set_val(30)
+    scale_text.on_submit(update_scale_txt)
+
     range_sld = range_slider
     dist_sld = dist_slider
     range_txt = range_text
     dist_txt = dist_text
+    scale_txt = scale_text
 
     return parent_figure, range_slider, dist_slider
 
@@ -144,16 +154,21 @@ def update_position_txt(val):
     dist_txt.set_val(float(val))
     parent_figure.canvas.draw_idle()
 
+def update_scale_txt(val):
+    update_view()
+
 def update_view():
     global parent_figure, range_txt, dist_txt, start_times, time_texts
     graph_fig = parent_figure.subfigs[0]
     axs = graph_fig.get_axes()
     dist = float(dist_txt.text)
     range = float(range_txt.text)/2
+
     for ax in axs:
         time_offset = datetime.timedelta(seconds=(dist-range))
         ax.set_xlim(dist-range, dist+range)
         time_texts[axs.index(ax)].set_text(start_times[axs.index(ax)]+time_offset)
+        ax.set_ylim(-10, float(scale_txt.text))
         #print()
 
     #TODO THIS DOES NOT WORk
@@ -169,19 +184,21 @@ def plot_record(record : wfdb.Record, fig : plt.Figure, start_time : datetime.da
 
     t = np.arange(0, record.sig_len/record.fs, 1.0 / record.fs)
     s = record.p_signal[: , 0 ]
-    ax.plot(t, s*1000)
-    if(len(fig.get_axes()) == 1):
-        ax.set_xlabel("Time (s)")
+    ax.plot(t, s)
+    #if(len(fig.get_axes()) == 1):
+    #    ax.set_xlabel("Time (s)")
+    ax.set(xticklabels=[""])
     ax.set_ylabel("(uv)")
     ax.grid(True, which="both", axis="both", )
     ax.set_xlim(0, record.fs/12)
-    ax.set_ylim(-100, 200)
+    ax.set_ylim(-10, 30)
     ax.set_aspect('auto', anchor="N", adjustable=None)
     ax.set_title(record.record_name, fontsize = 7)
 
-    #ax.minorticks_on()
-    #ax.xaxis.set_major_locator(MultipleLocator(1.0))
-    #ax.xaxis.set_minor_locator(MultipleLocator(1.0/6.0))
+    ax.minorticks_on()
+    ax.xaxis.set_major_locator(MultipleLocator(1.0))
+    ax.xaxis.set_minor_locator(MultipleLocator(1.0/6.0))
+
 
     #set up grid
     gridx = np.arange(0, record.sig_len/record.fs, 1.0)
