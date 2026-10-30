@@ -2,6 +2,7 @@ import datetime
 import re
 from array import ArrayType
 from enum import auto
+from typing import List
 
 import wfdb
 import numpy as np
@@ -31,24 +32,27 @@ time_texts = []
 
 parent_figure : plt.Figure = None;
 
-def main():
+
+def main(filesToOpen : List[str]):
     global parent_figure, dist_txt, records
-    #load records and store them in global
-    record, record_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG1_8")
-    record2, record2_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG2_8")
-    record3, record3_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG3_8")
-    record4, record4_start = open_record("C:/Users/zach/Downloads/25Aug26EEG/EEG4_8")
-    record5, record5_start = open_record("C:/Users/zach/Desktop/coding stuff/python stuff/WFDB_for_dad/Fw_ Clinical Insights Manager Demo Export Data Examples/II_2")
+
+    start_times = []
+    records = []
+
+    for file in filesToOpen:
+        x, y = open_record(file)
+        records.append(x)
+        start_times.append(y)
 
     #create UI and plot all records
-    parent_figure, range_slider, dist_slider = init_figure(record)
-    plot_record(record, parent_figure.subfigs[0], record_start)
-    plot_record(record2, parent_figure.subfigs[0], record2_start)
-    plot_record(record3, parent_figure.subfigs[0], record3_start)
-    plot_record(record4, parent_figure.subfigs[0], record4_start)
-    plot_record(record5, parent_figure.subfigs[0], record5_start)
+    parent_figure, range_slider, dist_slider = init_figure(records[0])
+
+    for i in range(records.__len__()):
+        plot_record(records[i], parent_figure.subfigs[0], start_times[i])
+
     plt.show()
     startTime = datetime.datetime.now()
+
 
 def open_record(filename):
     global start_times
@@ -184,7 +188,7 @@ def plot_record(record : wfdb.Record, fig : plt.Figure, start_time : datetime.da
 
     t = np.arange(0, record.sig_len/record.fs, 1.0 / record.fs)
     s = record.p_signal[: , 0 ]
-    ax.plot(t, s)
+    ax.plot(t, s, linewidth=0.5)
     #if(len(fig.get_axes()) == 1):
     #    ax.set_xlabel("Time (s)")
     ax.set(xticklabels=[""])
@@ -194,11 +198,11 @@ def plot_record(record : wfdb.Record, fig : plt.Figure, start_time : datetime.da
     ax.set_ylim(-10, 30)
     ax.set_aspect('auto', anchor="N", adjustable=None)
     ax.set_title(record.record_name, fontsize = 7)
+    #ax.set(line)
 
     ax.minorticks_on()
     ax.xaxis.set_major_locator(MultipleLocator(1.0))
     ax.xaxis.set_minor_locator(MultipleLocator(1.0/6.0))
-
 
     #set up grid
     gridx = np.arange(0, record.sig_len/record.fs, 1.0)
@@ -230,4 +234,4 @@ def plot_record(record : wfdb.Record, fig : plt.Figure, start_time : datetime.da
     #plt.show()
 
 
-main()
+#main()
